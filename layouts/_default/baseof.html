@@ -44,6 +44,75 @@
   {{ template "_internal/google_analytics.html" . }}
   {{ end }}
   {{ block "head" . }}{{ partial "head-additions.html" . }}{{ end }}
+
+  <style>
+    .search-box-wrapper {
+      display: flex;
+      justify-content: end;
+      padding: 20px;
+    }
+
+    .blue {
+      background-color: #0095ff;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .button-7 {
+      border: 1px solid transparent;
+      border-radius: 3px;
+      box-shadow: rgba(255, 255, 255, .4) 0 1px 0 0 inset;
+      box-sizing: border-box;
+      color: #fff;
+      cursor: pointer;
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.15385;
+      margin: 0;
+      outline: none;
+      padding: 8px .8em;
+      position: relative;
+      text-align: center;
+      text-decoration: none;
+      user-select: none;
+      touch-action: manipulation;
+      vertical-align: baseline;
+      white-space: nowrap;
+    }
+
+    .button-7:hover,
+    .button-7:focus {
+      background-color: #07c;
+    }
+
+    .button-7:focus {
+      box-shadow: 0 0 0 4px rgba(0, 149, 255, .15);
+    }
+
+    .button-7:active {
+      background-color: #0064bd;
+      box-shadow: none;
+    }
+
+    .search-results {}
+
+    .search-link {
+      text-decoration: none;
+      color: rgb(71, 70, 70);
+    }
+
+    .results {
+      width: 600px;
+      margin: 0 auto;
+      padding: 50px;
+      line-height: 1.5;
+      font-size: 1rem;
+      border: 1px solid black;
+    }
+  </style>
 </head>
 
 <body class="ma0 {{ $.Param " body_classes" | default "avenir bg-near-white" }}{{ with getenv "HUGO_ENV" }} {{ . }}{{
@@ -51,16 +120,20 @@
 
   {{ block "header" . }}{{ partial "site-header.html" .}}{{ end }}
   <main class="pb7" role="main">
-    <form method="get" action="">
-      <input id="search" name="q" type="text" />
-      <button type="submit" class="button">search</button>
-      <button type="button" class="button" onclick="removeSearchResults()">clear</button>
+    <div class="search-box-wrapper">
+      <form method=" get" action="">
+        <input id="search" name="q" type="text" class="button" />
+        <button type="submit" class="button-7 blue">search</button>
+        <button type="button" class="button-7 red" onclick="removeSearchResults()">clear</button>
 
-    </form>
-    <div id="app"></div>
+      </form>
+    </div>
+
+    <div id="app" class="search-results"></div>
 
     <script src="https://unpkg.com/lunr/lunr.js"></script>
     <!-- Generate a list of posts so we can display them -->
+
     {{ $p := slice }}
     {{ range (where .Site.RegularPages "Section" "==" "posts") }}
     {{ $post := dict "link" .RelPermalink "title" .Title "content" (substr .Plain 0 200) -}}
@@ -70,6 +143,7 @@
 
       const removeSearchResults = () => {
         $target.innerHTML = null
+        $target.style = null
       }
 
       const posts = JSON.parse({{ $p | jsonify }});
@@ -96,13 +170,13 @@
         });
         if (matchPosts.length > 0) {
           $target.innerHTML = matchPosts.map(p => {
-            return `<div>
-            <h3><a href=${p.link}>${p.title}</a></h3>
+            return `<div class="results">
+            <h3><a class="search-link" href=${p.link}>${p.title}</a></h3>
             <p>${p.content}...</p>
           </div>`;
           }).join('');
         } else {
-          $target.innerHTML = `<div>No search results found</div>`;
+          $target.innerHTML = `<div class="results">No search results found</div>`;
         }
       });
     </script>
