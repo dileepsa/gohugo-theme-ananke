@@ -51,6 +51,61 @@
 
   {{ block "header" . }}{{ partial "site-header.html" .}}{{ end }}
   <main class="pb7" role="main">
+    <form method="get" action="">
+      <input id="search" name="q" type="text" />
+      <button type="submit" class="button">search</button>
+      <button type="button" class="button" onclick="removeSearchResults()">clear</button>
+
+    </form>
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/lunr/lunr.js"></script>
+    <!-- Generate a list of posts so we can display them -->
+    {{ $p := slice }}
+    {{ range (where .Site.RegularPages "Section" "==" "posts") }}
+    {{ $post := dict "link" .RelPermalink "title" .Title "content" (substr .Plain 0 200) -}}
+    {{ $p = $p | append $post -}}
+    {{ end }}
+    <script>
+
+      const removeSearchResults = () => {
+        $target.innerHTML = null
+      }
+
+      const posts = JSON.parse({{ $p | jsonify }});
+      const query = new URLSearchParams(window.location.search);
+      const searchString = query.get('q');
+      document.querySelector('#search').value = searchString;
+      const $target = document.querySelector('#app');
+      console.log(posts)
+      // Our index uses title as a reference
+      const postsByTitle = posts.reduce((acc, curr) => {
+        acc[curr.title] = curr;
+        return acc;
+      }, {});
+
+      fetch('/gen/search-index.json').then(function (res) {
+        return res.json();
+      }).then(function (data) {
+        const index = lunr.Index.load(data);
+        const matches = index.search(searchString);
+        const matchPosts = [];
+        matches.forEach((m) => {
+          const x = postsByTitle[m.ref];
+          matchPosts.push(x);
+        });
+        if (matchPosts.length > 0) {
+          $target.innerHTML = matchPosts.map(p => {
+            return `<div>
+            <h3><a href=${p.link}>${p.title}</a></h3>
+            <p>${p.content}...</p>
+          </div>`;
+          }).join('');
+        } else {
+          $target.innerHTML = `<div>No search results found</div>`;
+        }
+      });
+    </script>
     {{ block "main" . }}{{ end }}
   </main>
   {{ block "footer" . }}{{ partialCached "site-footer.html" . }}{{ end }}
