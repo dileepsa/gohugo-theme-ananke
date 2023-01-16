@@ -44,6 +44,8 @@
   {{ template "_internal/google_analytics.html" . }}
   {{ end }}
   {{ block "head" . }}{{ partial "head-additions.html" . }}{{ end }}
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css"
+    integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
 
   <style>
     .search-box-wrapper {
@@ -122,10 +124,9 @@
   <main class="pb7" role="main">
     <div class="search-box-wrapper">
       <form method=" get" action="">
-        <input id="search" name="q" type="text" class="button" />
+        <input id="search" name="q" type="text" class="button search-input" required />
         <button type="submit" class="button-7 blue">search</button>
         <button type="button" class="button-7 red" onclick="removeSearchResults()">clear</button>
-
       </form>
     </div>
 
@@ -144,6 +145,8 @@
       const removeSearchResults = () => {
         $target.innerHTML = null
         $target.style = null
+        document.querySelector('#search').value = null;
+        window.location.search = ""
       }
 
       const posts = JSON.parse({{ $p | jsonify }});
@@ -158,27 +161,26 @@
         return acc;
       }, {});
 
-      fetch('/gen/search-index.json').then(function (res) {
-        return res.json();
-      }).then(function (data) {
-        const index = lunr.Index.load(data);
-        const matches = index.search(searchString);
-        const matchPosts = [];
-        matches.forEach((m) => {
-          const x = postsByTitle[m.ref];
-          matchPosts.push(x);
-        });
-        if (matchPosts.length > 0) {
-          $target.innerHTML = matchPosts.map(p => {
-            return `<div class="results">
+      fetch('/gen/search-index.json').then(res => res.json())
+        .then(data => {
+          const index = lunr.Index.load(data);
+          const matches = index.search(searchString);
+          const matchPosts = [];
+          matches.forEach((m) => {
+            const x = postsByTitle[m.ref];
+            matchPosts.push(x);
+          });
+          if (matchPosts.length > 0) {
+            $target.innerHTML = matchPosts.map(p => {
+              return `<div class="results">
             <h3><a class="search-link" href=${p.link}>${p.title}</a></h3>
             <p>${p.content}...</p>
           </div>`;
-          }).join('');
-        } else {
-          $target.innerHTML = `<div class="results">No search results found</div>`;
-        }
-      });
+            }).join('');
+          } else {
+            $target.innerHTML = `<div class="results">No search results found</div>`;
+          }
+        });
     </script>
     {{ block "main" . }}{{ end }}
   </main>
